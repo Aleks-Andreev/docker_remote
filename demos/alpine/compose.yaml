@@ -1,0 +1,16 @@
+name: alpine_demo
+
+services:
+  alpine_demo:
+    container_name: "alpine_demo"
+    image: "alpine:3.24"
+    attach: false
+    init: true
+    ports:
+      - 8084:8084
+    volumes:
+      - ./files:/root/app
+    command: ["sh", "/root/app/http.sh"]
+    
+
+

@@ -1,0 +1,38 @@
+name: http_api_demo
+
+services:
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    restart: no
+    ports:
+      - 8085:8085
+    env_file:
+      - .env
+    depends_on:
+      - pg_database
+
+  pg_database:
+    container_name: 'Postgres18'
+    image: 'postgres:18-alpine'
+    restart: unless-stopped
+    attach: false
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_DB=${DB_NAME}
+    ports:
+      - 5432:5432
+    deploy:
+      resources:
+        reservations:
+          memory: 32M
+        limits:
+          memory: 64M
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./sql:/docker-entrypoint-initdb.d/
+
+volumes:
+  postgres_data:
