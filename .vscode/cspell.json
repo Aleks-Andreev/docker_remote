@@ -1,0 +1,21 @@
+{
+    "version": "0.2",
+    "ignorePaths": [],
+    "dictionaries": [
+        "cargo_deps"
+    ],
+    "dictionaryDefinitions": [
+        {
+            "name": "cargo_deps",
+            "description": "Rust crates",
+            "path": "./cspell.cargo_deps.dict",
+            "kind":"words",
+            "noSuggest": true,
+            "addWords": false
+        }
+    ],
+    "ignoreWords": [],
+    "import": [],
+    "language": "en,ru",
+    "words": [],
+}
