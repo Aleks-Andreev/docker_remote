@@ -6,5 +6,6 @@
     ],
     "settings": {
         "python.defaultInterpreterPath": "${workspaceFolder}/demos/http_api/app/.venv/Scripts/python.exe",
+        "rust-analyzer.inlayHints.implicitDrops.enable": false,
     }
 }
