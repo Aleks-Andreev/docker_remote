@@ -1,5 +1,5 @@
 [package]
-name = "dore_configs_reader"
+name = "dore_lib"
 version.workspace = true
 rust-version.workspace = true
 edition.workspace = true
@@ -14,3 +14,12 @@ log.workspace = true
 yaml-rust2.workspace = true
 anyhow.workspace = true
 walkdir.workspace = true
+regex.workspace = true
+tokio.workspace = true
+async-trait.workspace = true
+russh.workspace = true
+russh-sftp.workspace = true
+crossterm.workspace = true
+futures.workspace = true
+shellexpand.workspace = true
+deadpool.workspace = true

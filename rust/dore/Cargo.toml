@@ -10,7 +10,11 @@ keywords.workspace = true
 description.workspace = true
 
 [dependencies]
-dore_configs_reader = { path = "../dore_configs_reader" }
-dore_ssh = { path = "../dore_ssh" }
+dore_lib = { path = "../dore_lib" }
 
 tokio.workspace = true
+log.workspace = true
+log4rs.workspace = true
+flate2.workspace = true
+anyhow.workspace = true
+dirs.workspace = true
