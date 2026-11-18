@@ -92,7 +92,7 @@ async fn extend_existing_path(
                 return Err(anyhow::anyhow!(e));
             }
             Ok(_) => {
-                debug!("Directory '{target_path} created'");
+                debug!("Directory '{target_path}' created");
             }
         }
     }

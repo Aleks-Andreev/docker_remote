@@ -67,7 +67,7 @@ impl ConfigFilesInfo {
         let mut compose: Option<PathBuf> = None;
 
         let mut cwd = current_dir()?;
-        let mut up = PathBuf::new();
+        let mut up = PathBuf::from(".");
         'a: loop {
             for entry in read_dir(&cwd)? {
                 let entry = entry?;
