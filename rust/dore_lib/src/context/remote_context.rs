@@ -92,17 +92,21 @@ impl RemoteContext {
 
 #[async_trait]
 impl Context for RemoteContext {
-    async fn build(&self, service: Option<&str>) -> anyhow::Result<()> {
-        let command = format!("docker compose build {}", service.unwrap_or(""));
+    async fn build(&self, services: &[String]) -> anyhow::Result<()> {
+        let mut command = format!("docker compose build");
+        for service in services {
+            command.push(' ');
+            command.push_str(service);
+        }
         self.sync_and_exec(true, &command).await
     }
 
-    async fn up(&self, detach: bool, service: Option<&str>) -> anyhow::Result<()> {
+    async fn up(&self, detach: bool, services: &[String]) -> anyhow::Result<()> {
         let mut cmd = format!("docker compose up");
         if detach {
             cmd.push_str(&format!(" -d"));
         }
-        if let Some(service) = service {
+        for service in services {
             cmd.push(' ');
             cmd.push_str(service);
         }
@@ -110,13 +114,17 @@ impl Context for RemoteContext {
         self.sync_and_exec(true, &cmd).await
     }
 
-    async fn down(&self, timeout_sec: Option<u32>, drop_volumes: bool) -> anyhow::Result<()> {
+    async fn down(&self, timeout_sec: Option<u32>, drop_volumes: bool, services: &[String]) -> anyhow::Result<()> {
         let mut cmd = format!("docker compose down");
         if let Some(timeout_sec) = timeout_sec {
             cmd.push_str(&format!(" --timeout {timeout_sec}"));
         }
         if drop_volumes {
             cmd.push_str(&format!(" --volumes"));
+        }
+        for service in services {
+            cmd.push(' ');
+            cmd.push_str(service);
         }
         
         self.sync_and_exec(false, &cmd).await

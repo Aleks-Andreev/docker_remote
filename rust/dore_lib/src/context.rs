@@ -9,9 +9,9 @@ mod remote_context;
 
 #[async_trait]
 pub trait Context {
-    async fn build(&self, service: Option<&str>) -> Result<()>;
-    async fn up(&self, detach: bool, service: Option<&str>) -> Result<()>;
-    async fn down(&self, timeout_sec: Option<u32>, drop_volumes: bool) -> Result<()>;
+    async fn build(&self, services: &[String]) -> Result<()>;
+    async fn up(&self, detach: bool, services: &[String]) -> Result<()>;
+    async fn down(&self, timeout_sec: Option<u32>, drop_volumes: bool, services: &[String]) -> Result<()>;
 }
 
 pub fn create_context() -> Result<Box<dyn Context + Send + Sync>> {
