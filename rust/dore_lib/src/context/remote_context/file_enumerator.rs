@@ -35,7 +35,7 @@ pub(crate) fn enumerate_files_for_copy(
             }
         }
         else {
-            info!("Item '{item:?}' is referenced by config but missing from disk");
+            info!("Item {item:?} is referenced by config but missing from disk");
         }
     }
 
@@ -44,7 +44,7 @@ pub(crate) fn enumerate_files_for_copy(
         if let Ok(file_filter) = file_filter.fold_path(folder) {
             let fs_path = from_cwd.join(folder);
             debug!("Search for files in dir {folder:?} by path {fs_path:?}");
-            collect_files_from_folder(file_filter, fs_path, &mut files_to_transfer)?;
+            collect_files_from_folder(file_filter, folder, fs_path, &mut files_to_transfer)?;
         }
         else {
             info!("Folder '{folder:?}' is referenced by config but missing from disk");
@@ -56,11 +56,14 @@ pub(crate) fn enumerate_files_for_copy(
 
 fn collect_files_from_folder(
     filter: &mut Trie,
-    folder: PathBuf,
+    folder: &PathBuf,
+    fs_path: PathBuf,
     dst: &mut HashMap<PathBuf, PathBuf>
 ) -> Result<()>
 {
-    for entry in folder.read_dir()? {
+    debug!("Search in {fs_path:?}, referenced as {folder:?}");
+
+    for entry in fs_path.read_dir()? {
         let path = entry?.path();
         if let Some(fname) = path.file_name() {
             if filter.should_ignore(fname) {
@@ -69,13 +72,15 @@ fn collect_files_from_folder(
 
             if path.is_file() {
                 let Ok(fs_path) = path.canonicalize() else { unreachable!("is_file is true") };
-                debug!("File '{path:?}' added as '{fs_path:?}'");
-                dst.insert(fs_path, path);
+                let fname = path.file_name().unwrap();
+                let value = folder.join(fname);
+                debug!("File '{path:?}' added as {value:?}");
+                dst.insert(fs_path, value);
             }
             else if path.is_dir() {
-                let Some(fs_path) = path.file_name() else { unreachable!("is_dir is true") };
-                debug!("Dir '{path:?}' added as '{fs_path:?}'");
-                collect_files_from_folder(filter.append_dir(fs_path)?, path, dst)?
+                let Some(fname) = path.file_name() else { unreachable!("is_dir is true") };
+                let folder = folder.join(fname);
+                collect_files_from_folder(filter.append_dir(fname)?, &folder, path, dst)?
             }
         }
     }
