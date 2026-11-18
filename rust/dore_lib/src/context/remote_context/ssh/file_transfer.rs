@@ -11,25 +11,14 @@ use russh_sftp::client::error::Error;
 use russh_sftp::protocol::Status;
 use russh_sftp::protocol::StatusCode::PermissionDenied;
 
-use crate::config_files::RemoteConfig;
 use super::SshSession;
 
 pub(crate) async fn sftp_file_transfer(
     session: Arc<SshSession>,
-    remote_config: &RemoteConfig,
+    target_path: Arc<String>,
     files: HashMap<PathBuf, PathBuf>
 ) -> Result<()> 
 {
-    let target_path = Arc::new({
-        let channel = session.create_channel().await?;
-        channel.request_subsystem(true, "sftp").await?;
-
-        let sftp = SftpSession::new(channel.into_stream()).await?;
-        let path = get_or_create_target_dir(&sftp, remote_config.path()).await?;
-        sftp.close().await?;
-        path
-    });
-
     let concurrency = 4;
     info!("Start transferring files to target location: {target_path}");
     stream::iter(files)
@@ -111,25 +100,29 @@ async fn extend_existing_path(
     Ok(target_path)
 }
 
-async fn get_or_create_target_dir(sftp: &SftpSession, target: &str) -> Result<String> {
+pub(crate) async fn create_target_dir(session: Arc<SshSession>, target: &str) -> Result<String> {
     debug!("Creating target dir '{target}'");
+
+    let channel = session.create_channel().await?;
+    channel.request_subsystem(true, "sftp").await?;
+
+    let sftp = SftpSession::new(channel.into_stream()).await?;
 
     if target.starts_with("/") {
         let target = PathBuf::from(&target[1..]);
-        let exist = "/";
+        let exist = "";
         debug!("Will create target path {target:?} starting from '{exist}'");
-        return extend_existing_path(sftp, exist, target).await
+        return extend_existing_path(&sftp, exist, target).await
     }
 
+    let exist = sftp.canonicalize(".").await?;
     if target.starts_with("~/") || target.starts_with("./") {
         let target = PathBuf::from(&target[2..]);
-        let exist = sftp.canonicalize(".").await?;
         debug!("Will create target path {target:?} starting from home directory '{exist}'");
-        return extend_existing_path(sftp, &exist, target).await;
+        return extend_existing_path(&sftp, &exist, target).await;
     }
 
     let target = PathBuf::from(target);
-    let exist = sftp.canonicalize(".").await?;
     debug!("Will create target path {target:?} starting from home directory '{exist}'");
-    return extend_existing_path(sftp, &exist, target).await;
+    return extend_existing_path(&sftp, &exist, target).await;
 }

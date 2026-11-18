@@ -65,10 +65,20 @@ impl RemoteContext {
 
         if do_sync {
             let files = self.collect_files().await?;
-            ssh::sftp_file_transfer(Arc::clone(&session), remote_config, files).await?;
+            let target_path = ssh::create_target_dir(Arc::clone(&session), remote_config.path()).await?;
+            let target_path = Arc::new(target_path);
+            ssh::sftp_file_transfer(Arc::clone(&session), target_path, files).await?;
         }
 
-        ssh::run_interactive_command(Arc::clone(&session), command_to_exec).await?;
+        let path_to_compose_unix = self.config_files.relative_path().iter()
+            .fold(String::new(), |mut path, next_dir| {
+                path.push_str(&next_dir.to_string_lossy());
+                path.push('/');
+                path
+            });
+        let command_with_work_dir = format!("cd {}/{} && {command_to_exec}", remote_config.path(), path_to_compose_unix);
+
+        ssh::run_interactive_command(Arc::clone(&session), &command_with_work_dir).await?;
         if let Ok(session) = Arc::try_unwrap(session) {
             debug!("Close SSH session");
             session.disconnect().await;
@@ -90,7 +100,7 @@ impl Context for RemoteContext {
     async fn up(&self, detach: bool, service: Option<&str>) -> anyhow::Result<()> {
         let mut cmd = format!("docker compose up");
         if detach {
-            cmd.push_str(&format!(" --d"));
+            cmd.push_str(&format!(" -d"));
         }
         if let Some(service) = service {
             cmd.push(' ');

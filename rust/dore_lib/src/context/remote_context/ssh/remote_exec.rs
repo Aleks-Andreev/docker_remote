@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyModifiers};
 use futures::stream::StreamExt;
-use log::debug;
+use log::{warn, info};
 use russh::ChannelMsg;
 use tokio::io::AsyncWriteExt;
 
@@ -23,7 +23,7 @@ pub(crate) async fn run_interactive_command(session: Arc<SshSession>, command: &
         &[]
     ).await?;
 
-    debug!("Executing command");
+    info!("Executing command '{command}'");
     channel.exec(true, command).await?;
     let _raw_mode = RawModeSwitcher::new()?;
 
@@ -57,6 +57,9 @@ pub(crate) async fn run_interactive_command(session: Arc<SshSession>, command: &
                     },
                     ChannelMsg::ExitStatus { exit_status } => {
                         exit_code = exit_status;
+                        if exit_code != 0 {
+                            warn!("Remote command '{command}' exited with code {exit_code}");
+                        }
                     },                    
                     ChannelMsg::Eof => {
                         channel.eof().await?;
