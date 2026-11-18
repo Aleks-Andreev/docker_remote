@@ -1,0 +1,9 @@
+target:
+  user: alex
+  host: 192.168.1.26
+  port: 22
+  path: "/upload_test/cli_http_server"
+
+auth:
+  key: ./local_private_key.key
+

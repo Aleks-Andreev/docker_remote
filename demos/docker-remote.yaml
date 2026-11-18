@@ -1,0 +1,16 @@
+# target: "ssh://alex@192.168.1.26:22/http_api"
+target:
+  user: alex
+  host: 192.168.1.26
+  port: 22
+  path: "~/alpine"
+
+auth:
+  key: "~/.ssh/id_rsa"
+
+files:
+  excluded:
+    - "*.bin"
+    - "logs"
+  included:
+    - .env # explicitly add main `.env` file
