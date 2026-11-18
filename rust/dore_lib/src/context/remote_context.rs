@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use log::{debug, error};
+use log::{debug, error, info};
 
 use crate::Context;
 use crate::config_files::ConfigFilesInfo;
@@ -69,6 +69,13 @@ impl RemoteContext {
         }
 
         ssh::run_interactive_command(Arc::clone(&session), command_to_exec).await?;
+        if let Ok(session) = Arc::try_unwrap(session) {
+            debug!("Close SSH session");
+            session.disconnect().await;
+        }
+        else {
+            info!("App error: session in use");
+        }
         Ok(())
     }
 }

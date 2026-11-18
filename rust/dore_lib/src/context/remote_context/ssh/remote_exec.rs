@@ -57,15 +57,20 @@ pub(crate) async fn run_interactive_command(session: Arc<SshSession>, command: &
                     },
                     ChannelMsg::ExitStatus { exit_status } => {
                         exit_code = exit_status;
+                    },                    
+                    ChannelMsg::Eof => {
+                        channel.eof().await?;
                     },
-                    ChannelMsg::Eof | ChannelMsg::Close => {
+                    ChannelMsg::Close => {
                         break;
-                    }
+                    },
                     _ => {}
                 }
             }
         }
     }
+
+    let _ = channel.close().await;
 
     stdout.write_all(&[b'\n']).await?;
     stdout.flush().await?;
