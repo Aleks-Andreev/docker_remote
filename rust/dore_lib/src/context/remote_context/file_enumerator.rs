@@ -18,8 +18,14 @@ pub(crate) fn enumerate_files_for_copy(
 {
     let mut additional_folders = vec![];
 
-    let mut files_to_transfer= HashMap::new();    
-    for item in compose_items.volumes().cloned().chain(remote_config.included_files().map(|f| PathBuf::from(f))) {
+    let mut files_to_transfer= HashMap::new();
+
+    let manual_items: Vec<_> = remote_config.included_files().map(|f| PathBuf::from(f)).collect();
+    let files_or_folders = compose_items.volumes()
+        .chain(compose_items.files())
+        .chain(manual_items.iter());
+
+    for item in files_or_folders {
         let fs_path = from_cwd.join(&item);
         debug!("Checking item {item:?} by path {fs_path:?}");
 
@@ -40,7 +46,10 @@ pub(crate) fn enumerate_files_for_copy(
     }
 
     let mut file_filter = Trie::init(from_cwd, remote_config.excluded_files())?;
-    for folder in compose_items.build_contexts().chain(additional_folders.iter()) {
+    let folders = compose_items.build_contexts()
+        .chain(additional_folders.into_iter());
+    
+    for folder in folders{
         if let Ok(file_filter) = file_filter.fold_path(folder) {
             let fs_path = from_cwd.join(folder);
             debug!("Search for files in dir {folder:?} by path {fs_path:?}");

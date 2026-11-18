@@ -15,20 +15,20 @@ pub(crate) struct ComposeReferencedItems {
 }
 
 impl ComposeReferencedItems {
+    pub fn files(&self) -> impl Iterator<Item = &PathBuf> { self.files.iter() }
+
+    pub fn build_contexts(&self) -> impl Iterator<Item = &PathBuf> { self.build_contexts.iter() }
+
+    pub fn volumes(&self) -> impl Iterator<Item = &PathBuf> { self.volumes.iter() }
+}
+
+impl ComposeReferencedItems {
     fn new() -> Self {
         Self {
             files: HashSet::new(),
             build_contexts: HashSet::new(),
             volumes: HashSet::new(),
         }
-    }
-
-    pub fn build_contexts(&self) -> impl Iterator<Item = &PathBuf> {
-        self.build_contexts.iter()
-    }
-
-    pub fn volumes(&self) -> impl Iterator<Item = &PathBuf> {
-        self.volumes.iter()
     }
 
     pub async fn parse_config(configs: &ConfigFilesInfo) -> Result<Self> {
