@@ -6,6 +6,7 @@ use std::sync::OnceLock;
 use anyhow::Result;
 
 mod remote_config;
+use log::error;
 pub(crate) use remote_config::{RemoteConfig, RemoteAuth};
 
 mod compose_items;
@@ -67,7 +68,7 @@ impl ConfigFilesInfo {
 
         let mut cwd = current_dir()?;
         let mut up = PathBuf::new();
-        'a: while !cwd.is_empty() {
+        'a: loop {
             for entry in read_dir(&cwd)? {
                 let entry = entry?;
                 let path = entry.path();
@@ -86,7 +87,12 @@ impl ConfigFilesInfo {
                 }
             }
 
-            cwd.pop();
+            if cwd.parent().is_some() {
+                cwd.pop();
+            }
+            else {
+                break;
+            }
             up.push("..");
         }
 
@@ -94,7 +100,10 @@ impl ConfigFilesInfo {
         let search_result = match (remote, compose) {
             (Some(remote), Some(compose)) => ConfigSearchResult::Ok(ConfigFilesInfo::new(remote, compose, up)?),
             (None, Some(_)) => ConfigSearchResult::NoRemote,
-            _ => ConfigSearchResult::NoDocker
+            _ => {
+                error!("Could not find docker compose file");
+                ConfigSearchResult::NoDocker
+            }
         };
         
         Ok(search_result)

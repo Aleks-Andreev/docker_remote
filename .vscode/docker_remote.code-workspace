@@ -7,5 +7,11 @@
     "settings": {
         "python.defaultInterpreterPath": "${workspaceFolder}/demos/http_api/app/.venv/Scripts/python.exe",
         "rust-analyzer.inlayHints.implicitDrops.enable": false,
+        "terminal.integrated.env.windows": {
+            "PATH": "${workspaceFolder}\\target\\debug;${env:PATH}"
+        },
+        "terminal.integrated.env.linux": {
+            "PATH": "${workspaceFolder}/target/debug:${env:PATH}"
+        }
     }
 }
