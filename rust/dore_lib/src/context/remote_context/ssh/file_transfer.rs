@@ -5,7 +5,7 @@ use std::path::{PathBuf, Path};
 use anyhow::{Result, bail};
 use futures::stream;
 use futures::stream::StreamExt;
-use log::debug;
+use log::{debug, info, warn};
 use russh_sftp::client::SftpSession;
 use russh_sftp::client::error::Error;
 use russh_sftp::protocol::Status;
@@ -31,10 +31,9 @@ pub(crate) async fn sftp_file_transfer(
     });
 
     let concurrency = 4;
+    info!("Start transferring files to target location: {target_path}");
     stream::iter(files)
         .map(|(local, remote)| {
-            debug!("Transferring {:?} to {remote:?}", local.file_name());
-
             let session = Arc::clone(&session);
             let target_path = Arc::clone(&target_path);
             async move {
@@ -42,14 +41,22 @@ pub(crate) async fn sftp_file_transfer(
                 channel.request_subsystem(true, "sftp").await?;
 
                 let sftp = SftpSession::new(channel.into_stream()).await?;
-                if let Some(parent) = remote.parent() {
-                    create_target_dir(&sftp, target_path.as_str(), parent).await?;
-                } // else -> it's a single file that goes directly to target dir that's already exists
+                let mut remote_file_path = if let Some(parent) = remote.parent() {
+                    extend_existing_path(&sftp, target_path.as_str(), parent).await?
+                }
+                else {
+                    target_path.as_str().to_owned()
+                };
 
                 let remote_fname = remote.file_name().expect("name should exists").to_string_lossy();
-                let mut remote_file = sftp.create(remote_fname).await?;
-                let local_data = tokio::fs::read(local).await?;
+                remote_file_path.push('/');
+                remote_file_path.push_str(&remote_fname);
+                
+                debug!("Opening {remote_file_path} as copy of {local:?}");
+                let mut remote_file = sftp.create(&remote_file_path).await?;
+                let local_data = tokio::fs::read(local).await?; // TODO: use buffering for large files
                 tokio::io::AsyncWriteExt::write_all(&mut remote_file, &local_data).await?;
+                debug!("Stored {} bytes to {remote_file_path}", local_data.len());
                 
                 tokio::io::AsyncWriteExt::shutdown(&mut remote_file).await?;
                 sftp.close().await?;
@@ -62,62 +69,67 @@ pub(crate) async fn sftp_file_transfer(
         .collect::<Vec<_>>()
         .await;
 
+    info!("All files copied");
     Ok(())
 }
 
-async fn create_target_dir(
+async fn extend_existing_path(
     sftp: &SftpSession,
-    exist_path_part: impl AsRef<Path>,
+    exist_path_part: &str,
     unknown_path_part: impl AsRef<Path>
 ) -> Result<String>
 {
-    let mut target_path = exist_path_part.as_ref().to_path_buf();
-    for dir in unknown_path_part.as_ref().iter() {
-        target_path.push(dir);
+    debug!("Extend existing path '{exist_path_part}' to required {:?}", unknown_path_part.as_ref().to_str());
 
-        let current_path = target_path.to_string_lossy();
-        match sftp.create_dir(current_path.clone()).await {
+    let mut target_path = exist_path_part.to_string();
+    for dir in unknown_path_part.as_ref().iter() {
+        target_path.push('/');
+        target_path.push_str(&dir.to_string_lossy());
+
+        if sftp.try_exists(&target_path).await? {
+            debug!("Path '{target_path}' already exist");
+            continue;
+        }
+
+        debug!("Creating directory '{target_path}'");
+        match sftp.create_dir(&target_path).await {
             Err(Error::Status( Status { status_code, ..})) => {
                 if status_code == PermissionDenied {
                     bail!("Can't access required path: '{:?}'", unknown_path_part.as_ref());
                 }
             },
-            Err(_) => {
-                if let Ok(true) = sftp.try_exists(current_path).await {
-                    continue;
-                }
+            Err(e) => {
+                warn!("Failed to create folder at '{target_path}' because of {e}");
+                return Err(anyhow::anyhow!(e));
             }
-            _ => { continue; }
+            Ok(_) => {
+                debug!("Directory '{target_path} created'");
+            }
         }
     }
 
-    Ok(target_path.to_string_lossy().to_string())
+    Ok(target_path)
 }
 
 async fn get_or_create_target_dir(sftp: &SftpSession, target: &str) -> Result<String> {
+    debug!("Creating target dir '{target}'");
+
     if target.starts_with("/") {
-        if let Ok(x) = sftp.canonicalize(target).await {
-            return Ok(x);
-        }
-
-        let exist = PathBuf::from("/");
-        let target = PathBuf::from(target);
-        let unknown = target.strip_prefix("/").unwrap().to_owned();
-        
-        return create_target_dir(sftp, exist, unknown).await
+        let target = PathBuf::from(&target[1..]);
+        let exist = "/";
+        debug!("Will create target path {target:?} starting from '{exist}'");
+        return extend_existing_path(sftp, exist, target).await
     }
-    
-    let mut target = target;
+
     if target.starts_with("~/") || target.starts_with("./") {
-        target = &target[2..];
+        let target = PathBuf::from(&target[2..]);
+        let exist = sftp.canonicalize(".").await?;
+        debug!("Will create target path {target:?} starting from home directory '{exist}'");
+        return extend_existing_path(sftp, &exist, target).await;
     }
 
-    if let Ok(x) = sftp.canonicalize(target).await {
-        return Ok(x);
-    }
-
-    let exist = PathBuf::from(sftp.canonicalize(".").await?);
-    let unknown = PathBuf::from(target);
-
-    create_target_dir(sftp, exist, unknown).await
+    let target = PathBuf::from(target);
+    let exist = sftp.canonicalize(".").await?;
+    debug!("Will create target path {target:?} starting from home directory '{exist}'");
+    return extend_existing_path(sftp, &exist, target).await;
 }
