@@ -43,7 +43,13 @@ impl RemoteContext {
         debug!("Connecting server with config: {remote_config:?}");
 
         // Message to user terminal
-        println!("Connecting to ssh://{}@{}:{}/{}", remote_config.user(), remote_config.host(), remote_config.port(), remote_config.path());
+        println!("Connecting to ssh://{}@{}:{}{}{}",
+            remote_config.user(),
+            remote_config.host(),
+            remote_config.port(),
+            if remote_config.path().starts_with('/') { "" } else { "/" },
+            remote_config.path()
+        );
 
         match ssh::SshSession::create(&remote_config).await {
             Ok(s) => {

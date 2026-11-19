@@ -5,6 +5,7 @@ use log4rs::append::rolling_file::RollingFileAppender;
 use log4rs::append::rolling_file::policy::compound::CompoundPolicy;
 use log4rs::encode::pattern::PatternEncoder;
 use log4rs::append::console::ConsoleAppender;
+use log4rs::filter::threshold::ThresholdFilter;
 
 mod custom_roller;
 use custom_roller::CustomFileRoller;
@@ -48,7 +49,7 @@ pub(crate) fn setup_logger(verbose: u8) {
     let log_filter = CustomLogLevelFilter::new(["dore"], default_log_level);
 
     let config = Config::builder()
-        .appender(Appender::builder().filter(Box::new(log_filter.clone())).build("cli", Box::new(console)))
+        .appender(Appender::builder().filter(Box::new(ThresholdFilter::new(LevelFilter::Warn))).build("cli", Box::new(console)))
         .appender(Appender::builder().filter(Box::new(log_filter)).build("file", Box::new(log_file)))
         .build(Root::builder()
             .appender("file")

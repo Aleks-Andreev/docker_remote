@@ -339,8 +339,7 @@ services:
 
             "ref_file_1.txt",
             "ref_file_2.txt",
-            "ref_file_3.txt",
-            "ref_file_4.txt",
+            "ref_file_3.txt",            
             "ref_file_5.txt",
 
             "ref_comp_1.yaml",
@@ -357,6 +356,7 @@ services:
             "env_6.env",
 
             "dock_file_1",
+            "Dockerfile"
         ];
 
         let expected_dirs = vec![
@@ -367,6 +367,7 @@ services:
 
         let expected_volumes = vec![
             "vol2",
+            "ref_file_4.txt",
         ];
 
         println!("Parsed files:");
@@ -378,6 +379,12 @@ services:
         println!("Parsed dirs:");
         for act_dir in &items_parser.build_contexts {
             println!("  {act_dir:?}");
+        }
+        println!();
+
+        println!("Parsed volumes:");
+        for act_vol in &items_parser.volumes {
+            println!("  {act_vol:?}");
         }
         println!();
 
