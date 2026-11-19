@@ -23,3 +23,4 @@ crossterm.workspace = true
 futures.workspace = true
 shellexpand.workspace = true
 deadpool.workspace = true
+windows-sys.workspace = true
