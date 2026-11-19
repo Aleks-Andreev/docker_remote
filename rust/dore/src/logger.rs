@@ -1,6 +1,6 @@
+use log::LevelFilter;
 use log4rs::Config;
 use log4rs::config::{Appender, Root};
-use log4rs::filter::threshold::ThresholdFilter;
 use log4rs::append::rolling_file::RollingFileAppender;
 use log4rs::append::rolling_file::policy::compound::CompoundPolicy;
 use log4rs::encode::pattern::PatternEncoder;
@@ -12,7 +12,10 @@ use custom_roller::CustomFileRoller;
 mod custom_trigger;
 use custom_trigger::CustomTrigger;
 
-pub(crate) fn setup_logger() {
+mod custom_filter;
+use custom_filter::CustomLogLevelFilter;
+
+pub(crate) fn setup_logger(verbose: u8) {
     let trigger = CustomTrigger::new(20, 10 * 1024);
 
     let mut log_path = dirs::data_local_dir().expect("Local dir should exist");
@@ -36,9 +39,17 @@ pub(crate) fn setup_logger() {
         .encoder(Box::new(cli_message_format))        
         .build();
 
+    let default_log_level = match verbose {
+        0 => LevelFilter::Warn,
+        1 => LevelFilter::Info,
+        _ => LevelFilter::Debug,
+    };
+
+    let log_filter = CustomLogLevelFilter::new(["dore"], default_log_level);
+
     let config = Config::builder()
-        .appender(Appender::builder().filter(Box::new(ThresholdFilter::new(log::LevelFilter::Warn))).build("cli", Box::new(console)))
-        .appender(Appender::builder().build("file", Box::new(log_file)))
+        .appender(Appender::builder().filter(Box::new(log_filter.clone())).build("cli", Box::new(console)))
+        .appender(Appender::builder().filter(Box::new(log_filter)).build("file", Box::new(log_file)))
         .build(Root::builder()
             .appender("file")
             .appender("cli")

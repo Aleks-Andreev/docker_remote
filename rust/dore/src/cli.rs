@@ -3,6 +3,10 @@ use clap::{Parser, Subcommand};
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 pub(crate) struct Cli {
+    /// Verbosity level
+    #[arg(short = 'v', action = clap::ArgAction::Count)]
+    pub(crate) verbose: u8,
+
     #[command(subcommand)]
     pub(crate) commands: Commands,
 }

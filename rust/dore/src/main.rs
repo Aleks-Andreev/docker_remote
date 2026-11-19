@@ -11,7 +11,7 @@ mod cli;
 async fn main() -> Result<()> {
     let cli = cli::Cli::parse();
 
-    logger::setup_logger();
+    logger::setup_logger(cli.verbose);
     info!("App started. CWD: {:?}", std::env::current_dir());
 
     if let Ok(ctx) = create_context() {
