@@ -82,7 +82,7 @@ impl ConfigFilesInfo {
                     }
                 }
 
-                if remote.is_some() && compose.is_some() {
+                if remote.is_some() {
                     break 'a;
                 }
             }
@@ -96,7 +96,6 @@ impl ConfigFilesInfo {
             up.push("..");
         }
 
-        // TOFIX: check if remote is above (or on the same level) as compose
         let search_result = match (remote, compose) {
             (Some(remote), Some(compose)) => ConfigSearchResult::Ok(ConfigFilesInfo::new(remote, compose, up)?),
             (None, Some(_)) => ConfigSearchResult::NoRemote,
