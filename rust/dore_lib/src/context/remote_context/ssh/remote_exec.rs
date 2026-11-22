@@ -75,7 +75,7 @@ pub(crate) async fn run_interactive_command(session: Arc<SshSession>, command: &
 
     let _ = channel.close().await;
 
-    stdout.write_all(&[b'\n']).await?;
+    stdout.write_all(b"\n").await?;
     stdout.flush().await?;
 
     Ok(exit_code)

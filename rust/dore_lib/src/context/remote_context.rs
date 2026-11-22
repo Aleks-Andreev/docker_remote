@@ -32,8 +32,8 @@ impl RemoteContext {
         let remote_config = self.config_files.get_remote_config()?;
         let files = file_enumerator::enumerate_files_for_copy(
             self.config_files.up(),
-            &remote_config,
-            &compose_items)?;
+            remote_config,
+            compose_items)?;
         debug!("Files ready to transfer: {files:?}");
 
         Ok(files)
@@ -51,16 +51,16 @@ impl RemoteContext {
             remote_config.path()
         );
 
-        match ssh::SshSession::create(&remote_config).await {
+        match ssh::SshSession::create(remote_config).await {
             Ok(s) => {
                 debug!("Connection established");
-                return Ok(Some(s));
+                Ok(Some(s))
             },
             Err(e) => {
                 error!("Failed connect to {}:{}. {e}", remote_config.host(), remote_config.port());
-                return Ok(None); // do not propagate error to main
+                Ok(None) // do not propagate error to main
             },
-        };
+        }
     }
 
     async fn sync_and_exec(&self, do_sync: bool, command_to_exec: &str) -> Result<()> {
@@ -99,7 +99,7 @@ impl RemoteContext {
 #[async_trait]
 impl Context for RemoteContext {
     async fn build(&self, services: &[String]) -> anyhow::Result<()> {
-        let mut command = format!("docker compose build");
+        let mut command = "docker compose build".to_string();
         for service in services {
             command.push(' ');
             command.push_str(service);
@@ -108,9 +108,9 @@ impl Context for RemoteContext {
     }
 
     async fn up(&self, detach: bool, services: &[String]) -> anyhow::Result<()> {
-        let mut cmd = format!("docker compose up");
+        let mut cmd = "docker compose up".to_string();
         if detach {
-            cmd.push_str(&format!(" -d"));
+            cmd.push_str(" -d");
         }
         for service in services {
             cmd.push(' ');
@@ -121,12 +121,12 @@ impl Context for RemoteContext {
     }
 
     async fn down(&self, timeout_sec: Option<u32>, drop_volumes: bool, services: &[String]) -> anyhow::Result<()> {
-        let mut cmd = format!("docker compose down");
+        let mut cmd = "docker compose down".to_string();
         if let Some(timeout_sec) = timeout_sec {
             cmd.push_str(&format!(" --timeout {timeout_sec}"));
         }
         if drop_volumes {
-            cmd.push_str(&format!(" --volumes"));
+            cmd.push_str(" --volumes");
         }
         for service in services {
             cmd.push(' ');

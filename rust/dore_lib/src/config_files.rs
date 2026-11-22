@@ -12,6 +12,7 @@ pub(crate) use remote_config::{RemoteConfig, RemoteAuth};
 mod compose_items;
 pub(crate) use compose_items::ComposeReferencedItems;
 
+#[allow(clippy::large_enum_variant)]
 pub(crate) enum ConfigSearchResult {
     Ok(ConfigFilesInfo),
     NoRemote,

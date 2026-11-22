@@ -1,0 +1,35 @@
+on:
+  push:
+
+name: Build, run linters and tests
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Rust deps cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Create output folders
+        run: mkdir ./artifacts
+
+      - name: Run unit tests
+        run: |
+          set -e
+          cargo test --no-fail-fast --color never --workspace > ./artifacts/unit_test.log 2>&1
+
+      - name: Run clippy
+        run: |
+          set -e
+          cargo clippy --workspace -- -D warnings > ./artifacts/clippy.log 2>&1
+
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          if-no-files-found: error
+          archive: false # workflow should stop at first error, so there should be only one file
+          path: ./artifacts/*.log

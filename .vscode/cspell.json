@@ -9,7 +9,7 @@
             "name": "cargo_deps",
             "description": "Rust crates",
             "path": "./cspell.cargo_deps.dict",
-            "kind":"words",
+            "kind": "words",
             "noSuggest": true,
             "addWords": false
         }
@@ -17,5 +17,7 @@
     "ignoreWords": [],
     "import": [],
     "language": "en,ru",
-    "words": [],
+    "words": [
+        "clippy"
+    ]
 }
