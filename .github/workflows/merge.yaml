@@ -7,7 +7,7 @@ on:
 name: Integration tests
 
 env:
-  XDG_DATA_HOME: "."
+  XDG_DATA_HOME: "$GITHUB_WORKSPACE"
   RUST_BACKTRACE: "full"
 
 jobs:
@@ -30,14 +30,14 @@ jobs:
       - name: Deploy bash http server
         uses: ./.github/actions/deploy_compose
         with:
-          cd_to: "./demos/alpine/files"
+          cd_to: "$GITHUB_WORKSPACE/demos/alpine/files"
           container_name: "alpine_demo"
           endpoint: "http://localhost:8084/"
 
       - name: Deploy py http api server
         uses: ./.github/actions/deploy_compose
         with:
-          cd_to: "demos/http_api/app"
+          cd_to: "$GITHUB_WORKSPACE/demos/http_api/app"
           container_name: "http_api"
           endpoint: "http://localhost:8085/api"
       # END test

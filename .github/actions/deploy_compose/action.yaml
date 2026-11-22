@@ -20,7 +20,7 @@ runs:
       run: |
         set -euo pipefail
         cd ${{ inputs.cd_to }}
-        "$GITHUB_WORKSPACE/target/release/dore" up
+        "$GITHUB_WORKSPACE/target/release/dore" up -d
 
     - name: Check endpoint
       shell: bash
@@ -29,6 +29,7 @@ runs:
 
         URL=${{ inputs.endpoint }}
         MAX_ATTEMPTS=5
+        WAIT_SEC=3
         for ((i=1; i<=MAX_ATTEMPTS; ++i)); do
           HTTP_CODE=$(curl -s -o /tmp/response.http -w "%{http_code}" "$URL" || true)
           if [ "$HTTP_CODE" == "200" ]; then
@@ -41,7 +42,8 @@ runs:
             exit 1
           fi
 
-          sleep 3
+          echo "Attempt $i failed"
+          sleep $WAIT_SEC
         done
 
     - name: Shutdown containers
@@ -58,6 +60,7 @@ runs:
 
         CON_NAME=${{ inputs.container_name }}
         MAX_ATTEMPTS=5
+        WAIT_SEC=2
         for ((i=1; i<=MAX_ATTEMPTS; ++i)); do
           docker ps --format "{{ .Names }}" > /tmp/containers_running.txt
           if ! grep -qE "^$CON_NAME$" /tmp/containers_running.txt; then
@@ -69,14 +72,14 @@ runs:
             exit 1
           fi
 
-          sleep 2
+          sleep $WAIT_SEC
         done
 
     - name: Search for errors in log
       shell: bash
       run: |
         set -euo pipefail
-        if grep -q "^[^\]*\] ERROR:" "./dore.logs/app.log"; then
+        if grep -q "^[^\]*\] ERROR:" ""$GITHUB_WORKSPACE/dore.logs/app.log"; then
           echo "Log contains error"
           exit 1
         fi
