@@ -19,8 +19,7 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        cd ${{ inputs.cd_to }}
-        "$GITHUB_WORKSPACE/target/release/dore" up -d
+        echo `pwd` && cd ${{ inputs.cd_to }} && echo `pwd` && "$GITHUB_WORKSPACE/target/release/dore" up -d
 
     - name: Check endpoint
       shell: bash
@@ -50,8 +49,7 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        cd ${{ inputs.cd_to }}
-        "$GITHUB_WORKSPACE/target/release/dore" down
+        echo `pwd` && cd ${{ inputs.cd_to }} && echo `pwd` && "$GITHUB_WORKSPACE/target/release/dore" down
 
     - name: Wait for containers to stop
       shell: bash
