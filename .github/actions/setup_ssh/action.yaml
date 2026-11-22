@@ -1,0 +1,41 @@
+name: Setup SSH
+description: Setup host-wide sshd and ssh server in docker
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup ssh on current VM
+      shell: bash
+      run: |
+        # To test key auth
+        mkdir ~/.ssh && chmod 700 ~/.ssh
+        ssh-keygen -t ed25519 -N "" -f ~/.ssh/deploy_tests_key
+        cat ~/.ssh/deploy_tests_key.pub >> ~/.ssh/authorized_keys
+        chmod 400 ~/.ssh/authorized_keys ~/.ssh/deploy_tests_key
+
+        # test upload to absolute path location
+        sudo mkdir /upload_test
+        sudo chown $USER:$USER /upload_test
+
+    - name: Setup SSH in docker
+      shell: bash
+      run: |
+        # To test password auth
+        docker run -d \
+          --name ssh-target \
+          -p 2222:2222 \
+          -e PUID=$(id -u) \
+          -e PGID=$(id -g) \
+          -e PASSWORD_ACCESS=true \            
+          -e USER_NAME=ssh_user \
+          -e USER_PASSWORD=ssh_password \
+          lscr.io/linuxserver/openssh-server:latest
+
+    # Tests will run after build and build take time. SSH servers should be already running at that time
+    # - name: Wait for SSH servers to be ready
+    #   shell: bash
+    #   run: |
+    #     timeout 30 bash -c 'until nc -z localhost 2222; do sleep 1; done'
+    #     timeout 30 bash -c 'until nc -z localhost 22; do sleep 1; done'
+
+

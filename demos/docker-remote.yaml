@@ -1,12 +1,12 @@
 # target: "ssh://alex@192.168.1.26:22/http_api"
 target:
   user: alex
-  host: 192.168.1.26
+  host: apps.vm
   port: 22
   path: "~/alpine"
 
 auth:
-  key: "~/.ssh/id_rsa"
+  key: "~/.ssh/deploy_tests_key"
 
 files:
   excluded:

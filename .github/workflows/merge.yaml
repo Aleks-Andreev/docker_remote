@@ -1,0 +1,51 @@
+on:
+  push:
+      branches:
+        - master
+  pull_request:
+
+name: Integration tests
+
+env:
+  XDG_DATA_HOME: "."
+  RUST_BACKTRACE: "full"
+
+jobs:
+  test_docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup_ssh
+
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo b --release
+
+      - name: Allow tests to resolve host `target-deploy.vm`
+        run: echo "127.0.0.1 apps.vm" | sudo tee -a /etc/hosts > /dev/null
+
+      - name: Restore `.env` files from examples
+        run: find . -name ".env.example" -exec sh -c 'cp -v "$1" "${1%.example}"' _ {} \;
+
+      # BEGIN tests
+      - name: Deploy bash http server
+        uses: ./.github/actions/deploy_compose
+        with:
+          cd_to: "./demos/alpine/files"
+          container_name: "alpine_demo"
+          endpoint: "http://localhost:8084/"
+
+      - name: Deploy py http api server
+        uses: ./.github/actions/deploy_compose
+        with:
+          cd_to: "demos/http_api/app"
+          container_name: "http_api"
+          endpoint: "http://localhost:8085/api"
+      # END test
+
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          if-no-files-found: error
+          name: logs
+          path: ./dore.logs/*

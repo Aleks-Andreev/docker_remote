@@ -18,6 +18,7 @@
     "import": [],
     "language": "en,ru",
     "words": [
-        "clippy"
+        "clippy",
+        "pipefail"
     ]
 }
