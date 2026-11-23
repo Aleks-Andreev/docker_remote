@@ -19,7 +19,15 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        echo `pwd` && cd ${{ inputs.cd_to }} && echo `pwd` && "$GITHUB_WORKSPACE/target/release/dore" up -d
+        echo `pwd` && cd ${{ inputs.cd_to }} && echo `pwd` && ls -lR && "$GITHUB_WORKSPACE/target/release/dore" up -d
+    
+    - name: Enable failure investigation
+      if: failure()
+      uses: owenthereal/action-upterm@v2
+      with:
+        limit-access-to-actor: true
+        limit-access-to-users: Aleks-Andreev
+        wait-timeout-minutes: 15
 
     - name: Check endpoint
       shell: bash

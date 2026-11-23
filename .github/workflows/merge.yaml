@@ -48,4 +48,6 @@ jobs:
         with:
           if-no-files-found: error
           name: logs
-          path: "$GITHUB_WORKSPACE/dore.logs/*"
+          path: |
+            "$GITHUB_WORKSPACE/dore.logs/*"
+            /home/runner/.local/share/dore.logs/*
