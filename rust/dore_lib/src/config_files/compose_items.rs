@@ -88,10 +88,9 @@ impl ComposeReferencedItems {
                         self.add_file(file_ref, configs);
                     }
                     else {
-                        if let Yaml::Hash(env_file) = file_ref {
-                            if let Some(Yaml::String(path)) = env_file.get(&Yaml::from_str("path")) {
+                        if let Yaml::Hash(env_file) = file_ref
+                            && let Some(Yaml::String(path)) = env_file.get(&Yaml::from_str("path")) {
                                 self.add_file(path, configs);
-                            }
                         }
                     }
                 }
@@ -179,18 +178,16 @@ impl ComposeReferencedItems {
 
         if let Yaml::Hash(services) = &root["services"] {
             for service in services.values() {
-                if let Yaml::Hash(credentials) = &service["credential_spec"] {
-                    if let Some(Yaml::String(file_ref)) = credentials.get(&Yaml::from_str("file")) {
+                if let Yaml::Hash(credentials) = &service["credential_spec"]
+                    && let Some(Yaml::String(file_ref)) = credentials.get(&Yaml::from_str("file")) {
                         self.add_file(file_ref, configs);
-                    }
                 }
 
-                self.process_env_section(configs, &service);
+                self.process_env_section(configs, service);
 
-                if let Yaml::Hash(extends) = &service["extends"] {
-                    if let Some(Yaml::String(file_ref)) = extends.get(&Yaml::from_str("file")) {
+                if let Yaml::Hash(extends) = &service["extends"]
+                    && let Some(Yaml::String(file_ref)) = extends.get(&Yaml::from_str("file")) {
                         self.process_config_ref(configs, file_ref, f).await?;
-                    }
                 }
 
                 if let Yaml::Array(service_volumes) = &service["volumes"] {
@@ -219,15 +216,14 @@ impl ComposeReferencedItems {
                         }
                     },
                     Yaml::Hash(build_spec) => {
-                        if let Some(Yaml::String(context_path)) = build_spec.get(&Yaml::from_str("context")) {
-                            if !context_path.starts_with("http://") && !context_path.starts_with("https://") {
+                        if let Some(Yaml::String(context_path)) = build_spec.get(&Yaml::from_str("context"))
+                            && !context_path.starts_with("http://") && !context_path.starts_with("https://") {
                                 let context_folder = configs.relative_path().join(context_path);
                                 self.build_contexts.insert(context_folder.clone());
 
                                 if let Some(Yaml::String(docker)) = build_spec.get(&Yaml::from_str("dockerfile")) {
                                     self.files.insert(context_folder.join(docker));
                                 }
-                            }
                         }
                     },
                     Yaml::BadValue => {},

@@ -1,0 +1,60 @@
+on:
+  push:
+      branches:
+        - master
+  pull_request:
+
+name: Integration tests
+
+env:
+  XDG_DATA_HOME: "$GITHUB_WORKSPACE"
+  RUST_BACKTRACE: "full"
+
+jobs:
+  test_docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup_ssh
+
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo b --release
+
+      - name: Allow tests to resolve host `target-deploy.vm`
+        run: echo "127.0.0.1 apps.vm" | sudo tee -a /etc/hosts > /dev/null
+
+      - name: Restore `.env` files from examples
+        run: find . -name ".env.example" -exec sh -c 'cp -v "$1" "${1%.example}"' _ {} \;
+
+      - name: Enable failure investigation
+        uses: owenthereal/action-upterm@v2
+        with:
+          limit-access-to-actor: true
+          limit-access-to-users: Aleks-Andreev
+          wait-timeout-minutes: 10
+
+      # BEGIN tests
+      - name: Deploy bash http server
+        uses: ./.github/actions/deploy_compose
+        with:
+          cd_to: "$GITHUB_WORKSPACE/demos/alpine/files"
+          container_name: "alpine_demo"
+          endpoint: "http://localhost:8084/"
+
+      - name: Deploy py http api server
+        uses: ./.github/actions/deploy_compose
+        with:
+          cd_to: "$GITHUB_WORKSPACE/demos/http_api/app"
+          container_name: "http_api"
+          endpoint: "http://localhost:8085/api"
+      # END test
+
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          if-no-files-found: error
+          name: logs
+          path: |
+            "$GITHUB_WORKSPACE/dore.logs/*"
+            /home/runner/.local/share/dore.logs/*

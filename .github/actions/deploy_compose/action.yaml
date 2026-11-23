@@ -1,0 +1,83 @@
+name: Deploy docker compose project
+description: Execute 'dore up' in specific folder
+
+inputs:
+  cd_to:
+    description: Directory from which program will run
+    required: true
+  container_name:
+    description: Container to check
+    required: true
+  endpoint:
+    description: HTTP endpoint address that should be listening and responding with 200 OK
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Exec deploy
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo `pwd` && cd ${{ inputs.cd_to }} && echo `pwd` && ls -lR && "$GITHUB_WORKSPACE/target/release/dore" up -d
+
+    - name: Check endpoint
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        URL=${{ inputs.endpoint }}
+        MAX_ATTEMPTS=5
+        WAIT_SEC=3
+        for ((i=1; i<=MAX_ATTEMPTS; ++i)); do
+          HTTP_CODE=$(curl -s -o /tmp/response.http -w "%{http_code}" "$URL" || true)
+          if [ "$HTTP_CODE" == "200" ]; then
+            grep -qE ".+" /tmp/response.http
+            break
+          fi
+
+          if [ "$i" -eq "$MAX_ATTEMPTS" ]; then
+            echo "Failed to wait on HTTP 200 OK from '$URL' with non-empty body. Last code is $HTTP_CODE";
+            exit 1
+          fi
+
+          echo "Attempt $i failed"
+          sleep $WAIT_SEC
+        done
+
+    - name: Shutdown containers
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo `pwd` && cd ${{ inputs.cd_to }} && echo `pwd` && "$GITHUB_WORKSPACE/target/release/dore" down
+
+    - name: Wait for containers to stop
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        CON_NAME=${{ inputs.container_name }}
+        MAX_ATTEMPTS=5
+        WAIT_SEC=2
+        for ((i=1; i<=MAX_ATTEMPTS; ++i)); do
+          docker ps --format "{{ .Names }}" > /tmp/containers_running.txt
+          if ! grep -qE "^$CON_NAME$" /tmp/containers_running.txt; then
+            break
+          fi
+
+          if [ "$i" -eq "$MAX_ATTEMPTS" ]; then
+            echo "Failed to wait for container shutdown";
+            exit 1
+          fi
+
+          sleep $WAIT_SEC
+        done
+
+    - name: Search for errors in log
+      shell: bash
+      run: |
+        set -euo pipefail
+        if grep -q "^[^\]*\] ERROR:" ""$GITHUB_WORKSPACE/dore.logs/app.log"; then
+          echo "Log contains error"
+          exit 1
+        fi

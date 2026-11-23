@@ -25,14 +25,12 @@ impl Trie {
         };
 
         let mut dockerignore_file = fs_path.read_dir()?
-            .into_iter()
             .filter_map(|f| f.ok())
             .filter_map(|f| {
                 let path = f.path();
-                if let Some(name) = path.file_name() {
-                    if name == ".dockerignore" {
+                if let Some(name) = path.file_name()
+                    && name == ".dockerignore" {
                         return Some(path);
-                    }
                 }
                 None
             });
@@ -51,7 +49,7 @@ impl Trie {
     }
 
     fn add_line_to_ignore(&mut self, line: String) {
-        if line.contains(&['*', '?']) {
+        if line.contains(['*', '?']) {
             let reg_line = line
                 .replace(".", "\\.")
                 .replace("*", ".*");

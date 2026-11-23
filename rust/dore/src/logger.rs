@@ -24,6 +24,8 @@ pub(crate) fn setup_logger(verbose: u8) {
     log_path.push("app");
     let log_path = log_path.to_str().expect("Path should be UTF8");
 
+    println!("Real log path: '{log_path}'");
+
     let roller = CustomFileRoller::new(log_path);
     let def_file_name = roller.get_default_file_name();
 

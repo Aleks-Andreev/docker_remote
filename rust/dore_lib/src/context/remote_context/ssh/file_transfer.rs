@@ -108,8 +108,8 @@ pub(crate) async fn create_target_dir(session: Arc<SshSession>, target: &str) ->
 
     let sftp = SftpSession::new(channel.into_stream()).await?;
 
-    if target.starts_with("/") {
-        let target = PathBuf::from(&target[1..]);
+    if let Some(target) = target.strip_prefix("/") {
+        let target = PathBuf::from(target);
         let exist = "";
         debug!("Will create target path {target:?} starting from '{exist}'");
         return extend_existing_path(&sftp, exist, target).await

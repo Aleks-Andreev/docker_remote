@@ -1,3 +1,5 @@
+use std::process::exit;
+
 use anyhow::Result;
 use clap::Parser;
 
@@ -26,7 +28,9 @@ async fn main() -> Result<()> {
                 ctx.build(&services).await?;
             },
         }
-    } // else -> outside of docker project folder, nothing to do
+    } else { // outside of docker project folder, nothing to do
+        exit(1);
+    }
 
     Ok(())
 }

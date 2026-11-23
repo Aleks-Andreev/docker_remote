@@ -5,7 +5,8 @@ services:
     build:
       context: ./app
       dockerfile: Dockerfile
-    restart: no
+    container_name: 'http_api'
+    restart: unless-stopped
     ports:
       - 8085:8085
     env_file:
