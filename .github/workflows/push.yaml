@@ -1,7 +1,7 @@
 on:
   push:
 
-name: Build, run linters and tests
+name: Unit tests
 
 jobs:
   ci:

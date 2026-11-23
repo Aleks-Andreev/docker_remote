@@ -26,6 +26,13 @@ jobs:
       - name: Restore `.env` files from examples
         run: find . -name ".env.example" -exec sh -c 'cp -v "$1" "${1%.example}"' _ {} \;
 
+      - name: Enable failure investigation
+        uses: owenthereal/action-upterm@v2
+        with:
+          limit-access-to-actor: true
+          limit-access-to-users: Aleks-Andreev
+          wait-timeout-minutes: 10
+
       # BEGIN tests
       - name: Deploy bash http server
         uses: ./.github/actions/deploy_compose
